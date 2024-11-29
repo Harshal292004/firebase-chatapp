@@ -1,0 +1,72 @@
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { createContext, useEffect, useState } from "react";
+import { db } from "../config/firebase";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
+export const AppContext = createContext();
+
+const AppContextProvider = (props) => {
+    const [userData, setUserData] = useState(null);
+    const [chatData, setChatData] = useState(null);
+    const navigate = useNavigate();
+
+    const loadUserData = async (uid) => {
+        try {
+            const userRef = doc(db, 'users', uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                setUserData(userData);
+                
+                // More flexible navigation logic
+                if (!userData.avatar || !userData.name) {
+                    navigate("/profile");
+                    toast.warning("Please complete your profile");
+                } else {
+                    navigate("/chat");
+                }
+
+                // Update last seen asynchronously without blocking
+                updateDoc(userRef, { lastSeen: Date.now() }).catch(console.error);
+            } else {
+                toast.error("User profile not found");
+                navigate("/");
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            toast.error("Failed to load user data");
+            navigate("/");
+        }
+    };
+
+    // Simplified last seen update
+    const updateLastSeen = async () => {
+        if (userData?.uid) {
+            const userRef = doc(db, 'users', userData.uid);
+            await updateDoc(userRef, { lastSeen: Date.now() });
+        }
+    };
+
+    useEffect(() => {
+        const intervalId = setInterval(updateLastSeen, 60000);
+        return () => clearInterval(intervalId);
+    }, [userData?.uid]);
+
+    const value = {
+        userData, 
+        setUserData,
+        chatData, 
+        setChatData,
+        loadUserData
+    };
+    
+    return (
+        <AppContext.Provider value={value}>
+            {props.children}
+        </AppContext.Provider>
+    );
+};
+
+export default AppContextProvider;
