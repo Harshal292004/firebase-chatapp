@@ -6,6 +6,7 @@ import { FaSmile } from "react-icons/fa";
 import { AppContext } from '../../context/AppContext';
 import { arrayUnion, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { toast } from 'react-toastify';
 
 const ChatBox = () => {
   const {userData,messagesId,chatUser,messages,setMessages}=useContext(AppContext)
@@ -24,15 +25,26 @@ const ChatBox = () => {
         })
         const userIDs=[chatUser.rId,userData.id]
         userIDs.forEach(async(id)=>{
-          const userChatRef=doc(db,'chats',id);
-          const userChatSnapShot=await getDoc(userChatsRef)
+          const userChatsRef=doc(db,'chats',id);
+          const userChatsSnapShot=await getDoc(userChatsRef)
           if(userChatsSnapShot.exsist()){
             const userChatData=userChatsSnapShot.data()
-            const chatIndex =userChatData.chatsData.findIndex((c)=>)
+            const chatIndex =userChatData.chatsData.findIndex((c)=>c.messageId=== messagesId)
+            userChatData.chatsData[chatIndex].lastMessage=input.slice(0,30)  
+            userChatData.chatsData[chatIndex].updatedAt=Date.now()
+            if(userChatData.chatsData[chatIndex].rId===userData.id){
+              userChatData.chatsData[chatIndex].messageSeen=false
+            }
+            await updateDoc(
+              userChatsRef,{
+                chatsData : userChatData.chatsData
+              }
+            )
           }
         })
       }
     }catch(error){
+      toast.error(error.message)
     }
   }
   useEffect(()=>{
@@ -83,8 +95,8 @@ const ChatBox = () => {
             className='flex-grow bg-transparent text-white focus:outline-none placeholder-gray-400 px-2'
           />
           <IoIosSend 
-            onClick={handleSendMessage}
             className='text-blue-500 cursor-pointer hover:text-blue-400 text-2xl'
+            onClick={sendMessage}
           />
         </div>
       </div>
