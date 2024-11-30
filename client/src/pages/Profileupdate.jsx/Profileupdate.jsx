@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const ProfileUpdate = () => {
-
   const { userData, loadUserData } = useContext(AppContext);
   const navigate = useNavigate();
   const auth = getAuth();
@@ -58,9 +57,9 @@ const ProfileUpdate = () => {
         if (!response.ok) {
           throw new Error(data.message || "Image upload failed");
         }
-        console.log(`Data URL:${data.url.url}`)
-        setProfileImage(data.url.url);
-        setPreviewImage(data.url.url); 
+        console.log(`Data URL:${data.url}`)
+        setProfileImage(data.url);
+        setPreviewImage(data.url); 
       } catch (error) {
         console.error("Failed to upload image:", error);
       }

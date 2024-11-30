@@ -7,7 +7,7 @@ import fs from 'fs';
 const tempDirectory = path.resolve('public', 'temp');
 
 if (!fs.existsSync(tempDirectory)) {
-    fs.mkdirSync(tempDirectory, { recursive: true, mode: 0o777 });
+    fs.mkdirSync(tempDirectory, { recursive: true});
 }
 
 console.log(`Temporary directory : ${tempDirectory}`);  // Check the full path of tempDirectory
@@ -15,12 +15,16 @@ console.log(`Temporary directory : ${tempDirectory}`);  // Check the full path o
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, tempDirectory); // Ensure file goes to the temp folder
+        cb(null, tempDirectory); 
     },
     filename: function (req, file, cb) {
         const id = nanoid();
+        console.log(`Nanoid:${id}`)
         const ext = path.extname(file.originalname); // Get file extension
+        console.log(`Extension: ${ext}`)
         cb(null, file.fieldname + '-' + id + ext);  // Set file name
+        console.log(file.fieldname)
+        
     }
 });
 
