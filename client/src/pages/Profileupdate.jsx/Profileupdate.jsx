@@ -58,9 +58,9 @@ const ProfileUpdate = () => {
         if (!response.ok) {
           throw new Error(data.message || "Image upload failed");
         }
-  
-        setProfileImage(data.url);
-        setPreviewImage(data.url); // Show preview of the uploaded image
+        console.log(`Data URL:${data.url.url}`)
+        setProfileImage(data.url.url);
+        setPreviewImage(data.url.url); 
       } catch (error) {
         console.error("Failed to upload image:", error);
       }

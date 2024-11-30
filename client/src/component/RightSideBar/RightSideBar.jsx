@@ -5,7 +5,7 @@ import {logout} from "../../config/firebase"
 import { useNavigate } from 'react-router-dom';
 
 const RightSideBar = () => {
-
+  const navigate=useNavigate()
   return (
     <div className='bg-[#16213E] text-white h-screen w-80 flex flex-col relative'>
       {/* User Profile Section */}
@@ -18,7 +18,11 @@ const RightSideBar = () => {
       {/* Potential Additional Sections */}
       <div className='flex-grow p-4'>
         {/* You can add more content here like settings, notifications, etc. */}
-        <div className='bg-[#0F3460] rounded-lg p-4 mb-4 cursor-pointer hover:bg-blue-600/20 transition'>
+        <div 
+        onClick={()=>{
+          navigate('/profile')
+        }}
+        className='bg-[#0F3460] rounded-lg p-4 mb-4 cursor-pointer hover:bg-blue-600/20 transition'>
           <p>Account Settings</p>
         </div>
         <div className='bg-[#0F3460] rounded-lg p-4 mb-4 cursor-pointer hover:bg-blue-600/20 transition'>
