@@ -7,7 +7,7 @@ import { AppContext } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 const LeftSideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const {userData,chatsData}=useContext(AppContext) 
+  const {userData,chatsData,chatUser,setChatUser,setMessagesId,messagesId}=useContext(AppContext) 
   const [user,setUser]=useState(null)
   const [showSearch,setShowSearch]=useState(false)
   const inputHandler=async (e)=>{
@@ -85,8 +85,8 @@ const LeftSideBar = () => {
 
   const setChat=async (item)=>{
     console.log(item);
-    
-
+    setMessagesId(item.messageId)
+    setChatUser(item)
   }
 
   return (

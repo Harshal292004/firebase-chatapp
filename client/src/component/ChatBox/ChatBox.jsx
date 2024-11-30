@@ -1,31 +1,56 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { FaUserCircle } from "react-icons/fa";
 import { GrGallery } from "react-icons/gr";
 import { IoIosSend } from "react-icons/io";
 import { FaSmile } from "react-icons/fa";
+import { AppContext } from '../../context/AppContext';
+import { arrayUnion, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const ChatBox = () => {
-  const [message, setMessage] = useState('');
-
-  const messages = [
-    { id: 1, text: 'Hello there!', sent: true },
-    { id: 2, text: 'Hi, how are you?', sent: false },
-    { id: 3, text: 'I\'m doing great, thanks for asking!', sent: true },
-  ];
-
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      console.log('Sending message:', message);
-      setMessage('');
+  const {userData,messagesId,chatUser,messages,setMessages}=useContext(AppContext)
+  const [input,setInput]= useState("")
+  const sendMessage=async ()=>{
+    try{
+      if(input && messagesId){
+        await updateDoc(doc(db,'messages',messagesId),{
+          messages:arrayUnion(
+            {
+              sId:userData.id,
+              text:input,
+              createdAt:new Date()
+            }
+          )
+        })
+        const userIDs=[chatUser.rId,userData.id]
+        userIDs.forEach(async(id)=>{
+          const userChatRef=doc(db,'chats',id);
+          const userChatSnapShot=await getDoc(userChatsRef)
+          if(userChatsSnapShot.exsist()){
+            const userChatData=userChatsSnapShot.data()
+            const chatIndex =userChatData.chatsData.findIndex((c)=>)
+          }
+        })
+      }
+    }catch(error){
     }
-  };
+  }
+  useEffect(()=>{
+    if(messagesId){
+      const unSub= onSnapshot(doc(db,'messages',messagesId),(res)=>{
+        setMessages()
+      })
+    }
+  },[messagesId])
 
-  return (
+  return chatUser?(
+
     <div className='bg-[#16213E] text-white h-screen w-1/2 flex flex-col'>
       <header className='p-6 flex flex-row items-center border-b border-[#0F3460]'>
         <FaUserCircle className='text-6xl text-blue-500 mr-4' />
+        <img src={chatUser.userData.avatar} alt="" />
         <div>
-          <h2 className='text-xl font-semibold'>John Doe</h2>
+          <h2 className='text-xl font-semibold'>{chatUser.userData.name}</h2>
           <p className='text-sm text-gray-400'>Online</p>
         </div>
       </header>
@@ -52,8 +77,8 @@ const ChatBox = () => {
           <GrGallery className='text-gray-400 cursor-pointer hover:text-blue-500' />
           <input 
             type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             placeholder='Type a message...'
             className='flex-grow bg-transparent text-white focus:outline-none placeholder-gray-400 px-2'
           />
@@ -64,7 +89,10 @@ const ChatBox = () => {
         </div>
       </div>
     </div>
-  );
+  ):<div className=''>
+    <img src="" alt="" />
+    <p>Apparently you are the only one stupid guy using this app ,this shows your loneliness </p>
+  </div>
 }
 
 export default ChatBox;
