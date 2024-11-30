@@ -1,10 +1,91 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { IoChatboxEllipses } from "react-icons/io5";
 import { CiSearch } from "react-icons/ci";
 import { FaUserEdit, FaSignOutAlt } from "react-icons/fa";
-
+import { arrayUnion, collection, doc, query, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { AppContext } from '../../context/AppContext';
+import { toast } from 'react-toastify';
 const LeftSideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const {userData,chatsData}=useContext(AppContext) 
+  const [user,setUser]=useState(null)
+  const [showSearch,setShowSearch]=useState(false)
+  const inputHandler=async (e)=>{
+    try{
+      e.preventDefault()
+      const input=e.target.value;
+      if(input){
+        setShowSearch(true)
+        const userRef=collection(db,'users')
+        const q=query(userRef,where("username","==",input.toLowerCase()))
+        const querySnap=await getDoc(q)
+        if(!querySnap.empty && querySnap.docs[0].data().id !== userData.id){
+          let userExist=false
+          chatsData.map((user)=>{
+            if(user.rId===querySnap.docs[0].data().id){
+              userExist=true
+            }
+          })
+          if(!userExist){
+            console.log(querySnap.docs[0].data)
+          setUser(querySnap.docs[0].data)
+          }
+          
+        }
+      }else{
+        setUser(null)
+        setShowSearch(false)
+      }
+    }
+    catch(error){  
+      console.log(error);
+      
+    }
+  }
+
+  const addChat=async()=>{
+    const messageRef=collection(db,'messsage')
+    const chatsRef=collection(db,"chats")
+    try{
+      const newMessageRef=doc(messageRef)
+     
+      await setDoc(newMessageRef,{
+        createAt:serverTimestamp(),
+        messages:[]
+      })
+
+      await updateDoc(doc(chatsRef,user.id),{
+        chatsData:arrayUnion(
+          {
+            messageId:newMessageRef.id,
+            lastMessage:"",
+            rId:userData.id,
+            updatedAt:Date.now(),
+            messageSeen:true 
+          }
+        )
+      })
+      await updateDoc(doc(chatsRef,userData.id),{
+        chatsData:arrayUnion(
+          {
+            messageId:newMessageRef.id,
+            lastMessage:"",
+            rId:user.id,
+            updatedAt:Date.now(),
+            messageSeen:true 
+          }
+        )
+      })
+    }catch(error){
+      toast.error(error.message)
+    }
+
+
+  }
+
+  const setChat=async ()=>{
+
+  }
 
   return (
     <div className='bg-[#16213E] text-white h-screen w-1/4 flex flex-col'>
@@ -46,13 +127,41 @@ const LeftSideBar = () => {
           ))}
         </div>
       </header>
-      <div className='p-4 flex items-center bg-[#0F3460] m-4 rounded-lg'>
+      <div className='p-4 flex items-center bg-[#0F3460] m-4 rounded-lg'
+      >
         <CiSearch className='text-gray-400 mr-2' />
         <input 
+          onChange={inputHandler}
           type="text" 
           placeholder='Search chats...'
           className='bg-transparent text-white w-full focus:outline-none placeholder-gray-400' 
         />
+      </div>
+      <div className='list'>
+
+        {
+          showSearch && user
+          ?<div className='' onClick={
+            addChat
+          }>
+            <img src={user.avatar} alt="" />
+            <p>{user.name}</p>
+            <p>{user.bio}</p>
+          </div>
+          :chatsData.map(
+            (item,index)=>(
+              <div key={index} className='friends'>
+                <img src={item.userData.avatar} alt="" />
+                <div>
+                  <p>{item.userData.name}</p>
+                  <p>{item.lastMessage}</p>
+                </div>
+
+              </div>
+            )
+          )
+        }
+
       </div>
     </div>
   );
