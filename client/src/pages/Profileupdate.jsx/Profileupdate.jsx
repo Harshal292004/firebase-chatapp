@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { updateProfile} from "../../config/firebase"; // Ensure these are implemented correctly
+import { updateProfile } from "../../config/firebase";
 import { FaRegUserCircle } from "react-icons/fa";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
@@ -9,10 +9,11 @@ const ProfileUpdate = () => {
   const { userData, loadUserData } = useContext(AppContext);
   const navigate = useNavigate();
   const auth = getAuth();
-  const[userName,setUserName]=useState("")
-  const[bio,setBio]=useState("")
-  const[profileImage,setProfileImage]=useState()
-  const[previewImage,setPreviewImage]=useState()
+  const [userName, setUserName] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileImage, setProfileImage] = useState("");
+  const [previewImage, setPreviewImage] = useState("");
+
   const checkAuthState = () => {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -22,7 +23,6 @@ const ProfileUpdate = () => {
       }
     });
   };
-  
 
   useEffect(() => {
     checkAuthState();
@@ -36,9 +36,6 @@ const ProfileUpdate = () => {
       setPreviewImage(userData.avatar || "");
     }
   }, [userData]);
-  
-
-
 
   const handleFileChange = async (e) => {
     const avatarFile = e.target.files[0];
@@ -46,26 +43,25 @@ const ProfileUpdate = () => {
       try {
         const formData = new FormData();
         formData.append("avatar", avatarFile);
-  
+
         const response = await fetch("http://localhost:5000/upload", {
           method: "POST",
           body: formData,
         });
-  
+
         const data = await response.json();
-  
+
         if (!response.ok) {
           throw new Error(data.message || "Image upload failed");
         }
-        console.log(`Data URL:${data.url}`)
+        console.log(`Data URL:${data.url}`);
         setProfileImage(data.url);
-        setPreviewImage(data.url); 
+        setPreviewImage(data.url);
       } catch (error) {
         console.error("Failed to upload image:", error);
       }
     }
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,12 +71,12 @@ const ProfileUpdate = () => {
       return;
     }
 
-    // Logic to handle profile update
     try {
       await updateProfile(userData.uid, userName, bio, profileImage);
       console.log("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
     }
   };
 

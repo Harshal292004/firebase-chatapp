@@ -34,7 +34,7 @@ const signup = async (username, email, password) => {
       username: username.toLowerCase(),
       email,
       name: "",
-      avatar: "",
+      avatar: "https://ik.imagekit.io/7iqy97dse/default.png?updatedAt=1732947137159",
       bio: "Hey, there! I am using Chat App",
       lastSeen: Date.now(),
     });

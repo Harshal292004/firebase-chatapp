@@ -19,8 +19,6 @@ const AppContextProvider = (props) => {
             if (userSnap.exists()) {
                 const userData = userSnap.data();
                 setUserData(userData);
-                
-                // More flexible navigation logic
                 if (!userData.avatar || !userData.name) {
                     navigate("/profile");
                     toast.warning("Please complete your profile");
@@ -42,7 +40,6 @@ const AppContextProvider = (props) => {
     };
 
     useEffect(()=>{
-
         if(userData){
             const chatRef=doc(db,'chats',userData.id)
             const unSub= onSnapshot(chatRef,async(res)=>{
