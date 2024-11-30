@@ -4,10 +4,14 @@ import path from 'path';
 import fs from 'fs';
 
 // Ensure the temp directory exists
-const tempDirectory = './public/temp';
+const tempDirectory = path.resolve('public', 'temp');
+
 if (!fs.existsSync(tempDirectory)) {
-    fs.mkdirSync(tempDirectory, { recursive: true });
+    fs.mkdirSync(tempDirectory, { recursive: true, mode: 0o777 });
 }
+
+console.log(`Temporary directory : ${tempDirectory}`);  // Check the full path of tempDirectory
+
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {

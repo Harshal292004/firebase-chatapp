@@ -1,60 +1,68 @@
 import fs from 'fs';
-import FormData from 'form-data';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 const uploadOnImageKit = async (localFilePath) => {
+    
     if (!localFilePath) {
-        console.error("No file path provided.");
-        return { error: 'No file path provided' }; // Return a more descriptive error
+        return { error: 'No file path provided' };
     }
 
     try {
-        // Check if the file exists before proceeding
+        
         if (!fs.existsSync(localFilePath)) {
-            console.error('File does not exist:', localFilePath);
-            return { error: 'File not found' }; // Handle missing file scenario
+            return { error: 'File not found' };
         }
-
-        const formData = new FormData();
-        formData.append('file', fs.createReadStream(localFilePath)); // Read the file to upload
-
         const url = 'https://upload.imagekit.io/api/v1/files/upload';
-        const options = {
-            method: 'POST',
+        
+        const fileName = localFilePath.split('/').pop(); 
+        
+        const privateKey = 'private_wHqUi6dEdk0iXg9mlZqsqoU8+FA=';
+        
+        const credentials = `${privateKey}:`;
+        
+        const encodedCredentials = Buffer.from(credentials).toString('base64');
+        
+        const authHeader = `Basic ${encodedCredentials}`;
+        
+        const formData = new FormData();
+        
+        formData.append('file', fs.createReadStream(localFilePath));
+       
+        formData.append('fileName', fileName);
+
+        const response = await axios.post(url, formData, {
             headers: {
-                Accept: 'application/json',
-                Authorization: `Basic ${process.env.IMAGEKIT_API_KEY}`  // Use env variable for security
+                Authorization: authHeader,
             },
-            body: formData
-        };
+        });
 
-        const response = await fetch(url, options);
-        const data = await response.json();
+        if (response.status >= 200 && response.status < 300) {
+            console.log('Image uploaded successfully:', response.data);
 
-        if (!response.ok || data.error) {
-            console.error('ImageKit upload failed:', data.error || 'Unknown error');
-            return { error: 'ImageKit upload failed', details: data.error || 'Unknown error' }; // Return detailed error info
+            // Delete the local file after a successful upload
+            try {
+                await fs.promises.unlink(localFilePath);     
+                console.log('Temporary file deleted successfully.');
+            } catch (unlinkError) {
+                console.error('Error deleting local file:', unlinkError);
+            }
+
+            return { url: response.data.url };
+        } else {
+            console.error('Image upload failed:', response.data);
+            return { error: 'Upload failed', details: response.data };
         }
-
-        // Delete the local file after successful upload
-        try {
-            await fs.promises.unlink(localFilePath); // Cleanup temporary file
-        } catch (unlinkError) {
-            console.error('Error deleting local file:', unlinkError);
-        }
-
-        return { url: data.url };  // Return the URL of the uploaded image
     } catch (err) {
         console.error('Error in image upload process:', err);
 
-        // Attempt to delete file if the upload fails
+        // Attempt to delete the file if the upload fails
         try {
             await fs.promises.unlink(localFilePath);
         } catch (unlinkError) {
             console.error('Error deleting local file:', unlinkError);
         }
 
-        return { error: 'Internal error during image upload', details: err.message }; // Return specific error message
+        return { error: 'Internal error during image upload', details: err.message };
     }
 };
 
