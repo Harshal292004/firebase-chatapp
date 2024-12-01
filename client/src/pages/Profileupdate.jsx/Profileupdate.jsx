@@ -1,23 +1,27 @@
 import React, { useContext, useState, useEffect } from "react";
-import { updateProfile } from "../../config/firebase";
+import { auth, updateUserProfile } from "../../config/firebase";
 import { FaRegUserCircle } from "react-icons/fa";
 import { AppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import { toast } from "react-toastify";
+
+const DEFAULT_AVATAR = "https://ik.imagekit.io/7iqy97dse/default.png?updatedAt=1732947137159";
+const API_BASE_URL = "http://localhost:5000"; // Move this to an environment config
 
 const ProfileUpdate = () => {
   const { userData, loadUserData } = useContext(AppContext);
   const navigate = useNavigate();
-  const auth = getAuth();
   const [userName, setUserName] = useState("");
   const [bio, setBio] = useState("");
-  const [profileImage, setProfileImage] = useState("");
-  const [previewImage, setPreviewImage] = useState("");
+  const [profileImage, setProfileImage] = useState(DEFAULT_AVATAR);
+  const [previewImage, setPreviewImage] = useState(DEFAULT_AVATAR);
 
-  const checkAuthState = () => {
+  // Check and handle user authentication state
+  const handleAuthState = () => {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        await loadUserData(user.uid);
+        await loadUserData(user.uid); // Fixed `user.id` to `user.uid`
       } else {
         navigate("/");
       }
@@ -25,26 +29,31 @@ const ProfileUpdate = () => {
   };
 
   useEffect(() => {
-    checkAuthState();
+    handleAuthState();
   }, []);
 
   useEffect(() => {
     if (userData) {
-      setUserName(userData.username || "");
+      setUserName(userData.userName || "");
       setBio(userData.bio || "");
-      setProfileImage(userData.avatar || "");
-      setPreviewImage(userData.avatar || "");
+      setProfileImage(userData.avatar || DEFAULT_AVATAR);
+      setPreviewImage(userData.avatar || DEFAULT_AVATAR);
     }
   }, [userData]);
 
   const handleFileChange = async (e) => {
     const avatarFile = e.target.files[0];
     if (avatarFile) {
+      if (!["image/jpeg", "image/png", "image/jpg"].includes(avatarFile.type)) {
+        toast.error("Only JPG and PNG files are allowed.");
+        return;
+      }
+
       try {
         const formData = new FormData();
         formData.append("avatar", avatarFile);
 
-        const response = await fetch("http://localhost:5000/upload", {
+        const response = await fetch(`${API_BASE_URL}/upload`, {
           method: "POST",
           body: formData,
         });
@@ -54,11 +63,11 @@ const ProfileUpdate = () => {
         if (!response.ok) {
           throw new Error(data.message || "Image upload failed");
         }
-        console.log(`Data URL:${data.url}`);
         setProfileImage(data.url);
         setPreviewImage(data.url);
+        toast.success("Image uploaded successfully!");
       } catch (error) {
-        console.error("Failed to upload image:", error);
+        toast.error(error.message);
       }
     }
   };
@@ -66,23 +75,24 @@ const ProfileUpdate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!userName) {
-      console.error("Username is required");
+    if (!userName.trim()) {
+      toast.error("Username is required.");
       return;
     }
 
     try {
-      await updateProfile(userData.uid, userName, bio, profileImage);
-      console.log("Profile updated successfully");
+      await updateUserProfile(userData.id, userName, bio, profileImage);
+      toast.success("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      toast.error("Failed to update profile. Please try again.");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#1A1A2E] flex items-center justify-center p-4">
       <div className="bg-[#16213E] rounded-xl shadow-lg flex items-center p-8 w-full max-w-4xl">
+        {/* Profile Image Section */}
         <div className="flex flex-col items-center justify-center w-1/3 relative">
           <div className="relative">
             <div className="rounded-full overflow-hidden w-40 h-40 mb-4 border-2 border-gray-600">
@@ -112,16 +122,17 @@ const ProfileUpdate = () => {
           <p className="text-gray-400 text-sm mt-2">Upload Profile Image</p>
         </div>
 
+        {/* Profile Form Section */}
         <form onSubmit={handleSubmit} className="flex-1 pl-8">
           <h2 className="text-2xl font-bold text-white mb-6">Profile Details</h2>
 
           <div className="mb-6">
-            <label htmlFor="username" className="text-gray-400 block mb-1">
+            <label htmlFor="userName" className="text-gray-400 block mb-1">
               Username
             </label>
             <input
               type="text"
-              id="username"
+              id="userName"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               placeholder="Enter your username"

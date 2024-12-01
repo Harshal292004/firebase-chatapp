@@ -1,8 +1,15 @@
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { 
+  updateProfile, 
+  createUserWithEmailAndPassword, 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  signOut 
+} from "firebase/auth";
 import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAyvUQj88mxaThwuc_UzdwI9cMoPwl3QQY",
   authDomain: "chat-app-b3ae2.firebaseapp.com",
@@ -10,43 +17,40 @@ const firebaseConfig = {
   storageBucket: "chat-app-b3ae2.firebasestorage.app",
   messagingSenderId: "723388917282",
   appId: "1:723388917282:web:614e2f50fb05805125cc7b",
-  measurementId: "G-724FFXFJMY"
+  measurementId: "G-724FFXFJMY",
 };
-
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Signup function
-const signup = async (username, email, password) => {
+// Constants for default values
+const DEFAULT_AVATAR = "https://ik.imagekit.io/7iqy97dse/default.png?updatedAt=1732947137159";
+const DEFAULT_BIO = "Hey, there! I am using Chat App";
+
+// Sign up a new user
+const signUp = async (userName, email, password) => {
   try {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
 
-   
-
-    // Save user data in Firestore
     await setDoc(doc(db, "users", user.uid), {
       id: user.uid,
-      username: username.toLowerCase(),
+      userName: userName.toLowerCase(),
       email,
       name: "",
-      avatar: "https://ik.imagekit.io/7iqy97dse/default.png?updatedAt=1732947137159",
-      bio: "Hey, there! I am using Chat App",
+      avatar: DEFAULT_AVATAR,
+      bio: DEFAULT_BIO,
       lastSeen: Date.now(),
     });
 
-    // Initialize empty chats for the user
     await setDoc(doc(db, "chats", user.uid), {
-      chatData: [],
+      chatsData: [],
     });
 
     toast.success("User signed up successfully!");
   } catch (error) {
-    console.error("Signup Error:", error.message);
     const errorMsg = error.message.includes("email-already-in-use")
       ? "This email is already in use."
       : "An error occurred. Please try again.";
@@ -54,38 +58,57 @@ const signup = async (username, email, password) => {
   }
 };
 
-
-const login= async (email,password)=>{
-  try{
-    await signInWithEmailAndPassword(auth,email,password)
-  }
-  catch(error){
-    console.error(error)
-    toast.error(error.code)
-  }
-}
-
-
-
-const logout= async ()=>{
-  try{
-  await signOut(auth)
-  }
-  catch(error){
-    console.error(error)
-    toast.error(error.code.split('/')[1].split('-').join(" "))
-  }
-}
-
-const updateProfile = async (uid, userName, bio, profileImage) => {
+// Log in a user
+const logIn = async (email, password) => {
   try {
-    const userRef = doc(db, "users", uid);
-    await setDoc(userRef, { username: userName, bio, avatar: profileImage }, { merge: true });
-    console.log("Profile updated successfully");
+    await signInWithEmailAndPassword(auth, email, password);
+    toast.success("Logged in successfully!");
   } catch (error) {
-    console.error("Error updating profile:", error);
+    const errorMsg = error.code.includes("user-not-found")
+      ? "User not found. Please check your email."
+      : "An error occurred. Please try again.";
+    toast.error(errorMsg);
   }
 };
 
+// Log out a user
+const logOut = async () => {
+  try {
+    await signOut(auth);
+    toast.success("Logged out successfully!");
+  } catch (error) {
+    const errorMsg = error.code.split("/")[1].split("-").join(" ");
+    toast.error(`Logout failed: ${errorMsg}`);
+  }
+};
 
-export {signup,login,logout,auth,db,updateProfile};
+// Update user profile
+const updateUserProfile = async (id, userName, bio, profileImage) => {
+  try {
+    // Update Firebase Auth profile
+    await updateProfile(auth.currentUser, {
+      displayName: userName,
+      photoURL: profileImage,
+    });
+
+    // Update Firestore user document
+    const userRef = doc(db, "users", id);
+    await setDoc(
+      userRef,
+      { 
+        userName: userName.toLowerCase(), 
+        bio, 
+        avatar: profileImage, 
+        lastSeen: Date.now() 
+      },
+      { merge: true }
+    );
+
+    toast.success("Profile updated successfully!");
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    toast.error("Failed to update profile. Please try again.");
+  }
+};
+
+export { signUp, logIn, logOut, auth, db, updateUserProfile };

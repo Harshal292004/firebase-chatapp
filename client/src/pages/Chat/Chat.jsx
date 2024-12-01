@@ -5,14 +5,16 @@ import ChatBox from '../../component/ChatBox/ChatBox';
 import { AppContext } from '../../context/AppContext';
 
 const Chat = () => {
-  const {chatData,userData}=useContext(AppContext)
+  const {
+    userData,chatsData
+  }=useContext(AppContext)
   const [loading ,setLoading]=useState(true)
-  useEffect(()=>{
-    if(chatData && userData){
-      setLoading(false)
 
+  useEffect(()=>{
+    if(chatsData && userData){
+      setLoading(false)
     }
-  },[chatData,userData])
+  },[chatsData,userData])
   return (
     <div className="min-h-screen bg-[#1A1A2E] flex items-center justify-center p-4">
 
