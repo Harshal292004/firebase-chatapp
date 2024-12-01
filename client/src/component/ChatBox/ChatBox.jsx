@@ -50,11 +50,48 @@ const ChatBox = () => {
   useEffect(()=>{
     if(messagesId){
       const unSub= onSnapshot(doc(db,'messages',messagesId),(res)=>{
-        setMessages()
+        setMessages(res.data().messages.reverse())
+        
       })
+      return ()=>{
+        unSub()
+      }
     }
   },[messagesId])
 
+  const convertTimeStamp= (timestamp)=>{
+    let date=timestamp.toDate()
+    const hour=date.getHours()
+    const minute=date.getMinutes()
+    if(hour>12){
+
+      return hour-12+":"+minute+" PM"
+
+    }else{
+      return hour + ":" + minute + " AM"
+    }
+  }
+
+  const sendImage= async (e)=>{
+    try{
+      const fileUrl= await upload(e.target.files[0])
+
+      if (fileUrl && messagesId){
+        await updateDoc(doc(db,'messages',messagesId),{
+          messages:arrayUnion(
+            {
+              sId:userData.id,
+              text:input,
+              createdAt:new Date()
+            }
+          )
+        })
+      }
+
+    }catch(error){  
+    }
+
+  }
   return chatUser?(
 
     <div className='bg-[#16213E] text-white h-screen w-1/2 flex flex-col'>
@@ -67,10 +104,10 @@ const ChatBox = () => {
         </div>
       </header>
       <main className='flex-grow overflow-y-auto p-4 space-y-4'>
-        {messages.map((msg) => (
+        {messages.map((msg,index) => (
           <div 
             key={msg.id} 
-            className={`flex ${msg.sent ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${msg.sId===userData.id ? 'justify-end' : 'justify-start'}`}
           >
             <div 
               className={`max-w-[70%] p-3 rounded-lg 
