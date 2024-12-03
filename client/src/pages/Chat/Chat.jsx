@@ -5,30 +5,29 @@ import ChatBox from '../../component/ChatBox/ChatBox';
 import { AppContext } from '../../context/AppContext';
 
 const Chat = () => {
-  const {
-    userData,chatsData
-  }=useContext(AppContext)
-  const [loading ,setLoading]=useState(true)
+  const { userData } = useContext(AppContext);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    if(chatsData && userData){
-      setLoading(false)
-    }
-  },[chatsData,userData])
+  useEffect(() => {
+    // Set loading based on userData
+    setLoading(!userData);
+  }, [userData]);
+
+  // If still loading, show a full-screen loader
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#1A1A2E] text-white flex items-center justify-center">
+        <p>Loading ..... </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#1A1A2E] flex items-center justify-center p-4">
-
       <div className='flex flex-row w-full max-w-6xl'>
-        {
-          loading
-          ?<p>Loading...</p>
-          :<>
-            <LeftSideBar />
-            <ChatBox />
-            <RightSideBar />
-          </>
-        }
-       
+        <LeftSideBar />
+        <ChatBox />
+        <RightSideBar />
       </div>
     </div>
   );

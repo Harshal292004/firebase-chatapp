@@ -1,5 +1,5 @@
 import { 
-  updateProfile, 
+  updateProfile,
   createUserWithEmailAndPassword, 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -9,7 +9,7 @@ import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { initializeApp } from "firebase/app";
 
-// Firebase configuration
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAyvUQj88mxaThwuc_UzdwI9cMoPwl3QQY",
   authDomain: "chat-app-b3ae2.firebaseapp.com",
@@ -25,16 +25,17 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Constants for default values
 const DEFAULT_AVATAR = "https://ik.imagekit.io/7iqy97dse/default.png?updatedAt=1732947137159";
 const DEFAULT_BIO = "Hey, there! I am using Chat App";
 
-// Sign up a new user
+/**
+ * Sign up a new user
+ */
 const signUp = async (userName, email, password) => {
   try {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
-
+    console.log(user)
     await setDoc(doc(db, "users", user.uid), {
       id: user.uid,
       userName: userName.toLowerCase(),
@@ -45,11 +46,10 @@ const signUp = async (userName, email, password) => {
       lastSeen: Date.now(),
     });
 
-    await setDoc(doc(db, "chats", user.uid), {
-      chatsData: [],
-    });
+    await setDoc(doc(db, "chats", user.uid), { chatsData: [] });
 
     toast.success("User signed up successfully!");
+    return user.uid
   } catch (error) {
     const errorMsg = error.message.includes("email-already-in-use")
       ? "This email is already in use."
@@ -58,55 +58,58 @@ const signUp = async (userName, email, password) => {
   }
 };
 
-// Log in a user
+/**
+ * Log in an existing user
+ */
 const logIn = async (email, password) => {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
     toast.success("Logged in successfully!");
+    
+    return user.uid; // Return the user's unique ID
   } catch (error) {
     const errorMsg = error.code.includes("user-not-found")
       ? "User not found. Please check your email."
       : "An error occurred. Please try again.";
     toast.error(errorMsg);
+    
+    return null; // Return null if login fails
   }
 };
 
-// Log out a user
+/**
+ * Log out the current user
+ */
 const logOut = async () => {
   try {
     await signOut(auth);
     toast.success("Logged out successfully!");
   } catch (error) {
-    const errorMsg = error.code.split("/")[1].split("-").join(" ");
-    toast.error(`Logout failed: ${errorMsg}`);
+    toast.error(`Logout failed: ${error.message}`);
   }
 };
 
-// Update user profile
+/**
+ * Update user profile
+ */
 const updateUserProfile = async (id, userName, bio, profileImage) => {
   try {
-    // Update Firebase Auth profile
     await updateProfile(auth.currentUser, {
       displayName: userName,
       photoURL: profileImage,
     });
 
-    // Update Firestore user document
     const userRef = doc(db, "users", id);
     await setDoc(
       userRef,
-      { 
-        userName: userName.toLowerCase(), 
-        bio, 
-        avatar: profileImage, 
-        lastSeen: Date.now() 
-      },
+      { userName: userName.toLowerCase(), bio, avatar: profileImage, lastSeen: Date.now() },
       { merge: true }
     );
 
     toast.success("Profile updated successfully!");
   } catch (error) {
-    console.error("Error updating profile:", error);
     toast.error("Failed to update profile. Please try again.");
   }
 };

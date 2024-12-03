@@ -14,19 +14,15 @@ const Login = () => {
     const [loading, setLoading] = useState(false); // Add a loading state for better UX
     
     const navigate = useNavigate();
-    const { loadUserData } = useContext(AppContext);
+    const { loadUserData,userData } = useContext(AppContext);
 
     const checkAuthState = () => {
-        console.log("Checking auth state...");
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    console.log(`User authenticated: ${JSON.stringify(user)}`);
-                    console.log(`User UID: ${user.uid}`);
                     await loadUserData(user.uid);
                     navigate("/chat");
                 } catch (error) {
-                    console.error("Failed to load user data:", error);
                     toast.error("Failed to load user data");
                 }
             } else {
@@ -36,32 +32,25 @@ const Login = () => {
     };
     
     useEffect(() => {
-        console.log("Initializing auth state check...");
         checkAuthState();
     }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true); // Set loading to true when submitting the form
-        console.log("Form submitted, starting validation...");
-
-        // Input validation
+        setLoading(true); 
         if (!email || !password) {
-            console.log("Validation failed: Missing email or password");
             toast.error("Please fill in all fields");
             setLoading(false); // Reset loading when validation fails
             return;
         }
 
         if (currState === "Sign Up" && !userName) {
-            console.log("Validation failed: Missing username for signup");
             toast.error("Username is required for Sign Up");
             setLoading(false);
             return;
         }
 
         if (!termsAccepted) {
-            console.log("Validation failed: Terms not accepted");
             toast.error("Please accept the terms and conditions");
             setLoading(false);
             return;
@@ -70,17 +59,17 @@ const Login = () => {
         try {
             console.log(`Processing ${currState === "Sign Up" ? "Sign Up" : "Login"}...`);
             if (currState === "Sign Up") {
-                const user = await signUp(userName, email, password);
-                console.log(`User signed up: ${user ? user.uid : 'No user returned'}`);
-                if (user) {
-                    await loadUserData(user.uid);
+                const userId = await signUp(userName, email, password);
+                console.log(`UserId: ${userId}`)           
+                if (userId) {
+                    await loadUserData(userId);
+                    console.log( `User data after loading in the handle submit:   ${userData}`)
                     navigate("/chat");
                 }
             } else {
-                const user = await logIn(email, password);
-                console.log(`User logged in: ${user ? user.uid : 'No user returned'}`);
-                if (user) {
-                    await loadUserData(user.uid);
+                const userId = await logIn(email, password);
+                if (userId) {
+                    await loadUserData(userId);
                     navigate("/chat");
                 }
             }
